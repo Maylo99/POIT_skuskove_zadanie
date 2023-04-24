@@ -29,48 +29,69 @@
             socket.on('connect', function () {
                 socket.emit('my_event', {data: 'I\'m connected!', value: 1});
             });
+            socket.on('my_response2', function (msg) {
+                    const parsedData = JSON.parse(msg.row_data);
+                    const xValues = parsedData.map(obj => obj.x);
+                    const yValues = parsedData.map(obj => obj.y);
+                    trace = {
+                        x: xValues,
+                        y: yValues,
+                    };
+                    layout = {
+                        title: 'Data z databazy',
+                        xaxis: {
+                            title: 'x',
+                        },
+                        yaxis: {
+                            title: 'y'
+                        }
+                    }
+                    var traces = new Array();
+                    traces.push(trace);
+                    Plotly.newPlot($('#plotdiv')[0], traces, layout);
+                }
+            )
 
             socket.on('my_response', function (msg) {
-                console.log(msg.data);
-                $('#log').append('Received #' + msg.count + ': ' + msg.data +'<br>' + msg.data2 +'<br>').html();
+                $('#log').append('Received #' + msg.count + ': ' + msg.data + '<br>' + msg.data2 + '<br>').html();
                 x.push(parseFloat(msg.count));
-                y.push(parseFloat(msg.data));
-                y2.push(parseFloat(msg.data2));
-                trace = {
-                    x: x,
-                    y: y,
-                };
-                layout = {
-                    title: 'Data',
-                    xaxis: {
-                        title: 'x',
-                    },
-                    yaxis: {
-                        title: 'y'
-                    }
-                };
-                trace2 = {
-                    x: x,
-                    y: y2,
-                };
-                layout = {
-                    title: 'Data',
-                    xaxis: {
-                        title: 'x',
-                    },
-                    yaxis: {
-                        title: 'y'
-                    }
-                };
-
-                var traces = new Array();
-                traces.push(trace);
-                traces.push(trace2);
-                console.log(traces);
-
-                Plotly.newPlot($('#plotdiv')[0], traces, layout);
+                y.push(parseFloat(msg.row_data));
+                y2.push(parseFloat(msg.row_data));
+                // trace = {
+                //     x: x,
+                //     y: y,
+                // };
+                // layout = {
+                //     title: 'Data',
+                //     xaxis: {
+                //         title: 'x',
+                //     },
+                //     yaxis: {
+                //         title: 'y'
+                //     }
+                // };
+                // trace2 = {
+                //     x: x,
+                //     y: y2,
+                // };
+                // layout = {
+                //     title: 'Data',
+                //     xaxis: {
+                //         title: 'x',
+                //     },
+                //     yaxis: {
+                //         title: 'y'
+                //     }
+                // };
+                //
+                // var traces = new Array();
+                // traces.push(trace);
+                // traces.push(trace2);
+                // console.log(traces);
+                //
+                // Plotly.newPlot($('#plotdiv')[0], traces, layout);
                 console.log(parseFloat(msg.data))
-                 var data = [
+                var data = [
                     {
                         domain: {x: [0, 1], y: [0, 1]},
                         value: parseFloat(msg.data),
@@ -90,6 +111,10 @@
                 socket.emit('my_event', {value: $('#emit_value').val()});
                 return false;
             });
+            $('form#row_id').submit(function (event) {
+                socket.emit('row_id_event', {row_id: $('#row_id_value').val()});
+                return false;
+            });
             $('form#disconnect').submit(function (event) {
                 socket.emit('disconnect_request');
                 return false;
@@ -104,7 +129,8 @@
                 socket.emit('click_event', {value: $('#start').val()});
                 return false;
             });
-        });
+        })
+        ;
     </script>
 </head>
 <body>
@@ -131,6 +157,10 @@
         <button id="buttonVal" type="submit" value="stop">stop</button>
     </div>
     <div id="tabs-2">
+        <form id="row_id" method="POST" action='#'>
+            <input type="text" name="row_id" id="row_id_value" placeholder="ID riadku">
+            <input type="submit" value="Send">
+        </form>
         <div id="plotdiv" style="width:600px;height:250px;"></div>
     </div>
     <div id="tabs-3">

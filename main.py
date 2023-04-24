@@ -26,6 +26,11 @@ socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 thread_lock = Lock()
 
+def get_data_from_db(db,id):
+    cursor=db.cursor()
+    cursor.execute("SELECT hodnoty FROM graph WHERE id = %s", (id,))
+    row_data = cursor.fetchone()
+    return row_data
 
 def background_thread(args):
     count = 0
@@ -37,6 +42,7 @@ def background_thread(args):
         if args:
             A = dict(args).get('A')
             btnV = dict(args).get('btn_value')
+            row_id_value=dict(args).get('row_id')
         else:
             A = 1
         # print A
@@ -45,7 +51,7 @@ def background_thread(args):
         elif btnV == "stop":
             flag = 0
         else:
-            flag = 0
+            flag = 2
         if flag == 1:
             print(args)
             socketio.sleep(2)
@@ -61,15 +67,22 @@ def background_thread(args):
             socketio.emit('my_response',
                           {'data': float(A) * prem, 'data2': float(A) * prem2, 'count': count},
                           namespace='/test')
-        else:
+        elif flag==0:
             if len(dataList) > 0:
                 json_object = json.dumps(dataList, indent=4)
+                dataList=[]
                 print(str(dataList).replace("'", "\""))
                 cursor = db.cursor()
                 cursor.execute("SELECT MAX(id) FROM graph")
                 maxid = cursor.fetchone()
                 cursor.execute("INSERT INTO graph (id, hodnoty) VALUES (%s, %s)", (maxid[0] + 1, json_object))
                 db.commit()
+        if row_id_value is not None or row_id_value!="":
+            row_data_values=get_data_from_db(db,row_id_value)
+            row_id_value=""
+            socketio.emit('my_response2',
+                      { 'row_data':row_data_values},namespace='/test')
+
     db.close()
 
 
@@ -77,7 +90,11 @@ def background_thread(args):
 def index():
     return render_template('tabs.html', async_mode=socketio.async_mode)
 
-
+@socketio.on('row_id_event', namespace='/test')
+def test_message(message):
+    session['row_id'] = message['row_id']
+    # emit('my_response',
+    #      {'data': message['value'], 'count': session['receive_count']})
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
