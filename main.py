@@ -4,6 +4,7 @@ from flask_socketio import SocketIO, emit, disconnect
 import math
 import time
 import json
+import os
 import MySQLdb
 import time
 import configparser as ConfigParser
@@ -26,11 +27,44 @@ socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 thread_lock = Lock()
 
-def get_data_from_db(db,id):
-    cursor=db.cursor()
+
+def get_data_from_db(db, id):
+    cursor = db.cursor()
     cursor.execute("SELECT hodnoty FROM graph WHERE id = %s", (id,))
     row_data = cursor.fetchone()
     return row_data
+
+
+def write_to_json(new_record, str_id):
+    filename = "data.json"
+    if os.path.getsize(filename) > 0:
+        with open(filename, 'r') as f:
+            existing_data = json.load(f)
+        init={
+            "id": str_id,
+            "result": {
+                "data": new_record
+            }
+        }
+        # Append new record to existing data
+        existing_data.append(init)
+
+        # Write combined data back to file as a JSON array
+        with open(filename, 'w') as f:
+            f.write(json.dumps(existing_data, indent=4))
+    else:
+        # Write new record as a JSON array to file
+        init = [{
+            "id": str_id,
+            "result": {
+                "data": new_record
+            }
+        }
+        ]
+
+        with open(filename, 'w') as f:
+            f.write(json.dumps(init))
+
 
 def background_thread(args):
     count = 0
@@ -42,7 +76,7 @@ def background_thread(args):
         if args:
             A = dict(args).get('A')
             btnV = dict(args).get('btn_value')
-            row_id_value=dict(args).get('row_id')
+            row_id_value = dict(args).get('row_id')
         else:
             A = 1
         # print A
@@ -67,21 +101,24 @@ def background_thread(args):
             socketio.emit('my_response',
                           {'data': float(A) * prem, 'data2': float(A) * prem2, 'count': count},
                           namespace='/test')
-        elif flag==0:
+        elif flag == 0:
             if len(dataList) > 0:
                 json_object = json.dumps(dataList, indent=4)
-                dataList=[]
+
                 print(str(dataList).replace("'", "\""))
                 cursor = db.cursor()
                 cursor.execute("SELECT MAX(id) FROM graph")
                 maxid = cursor.fetchone()
                 cursor.execute("INSERT INTO graph (id, hodnoty) VALUES (%s, %s)", (maxid[0] + 1, json_object))
                 db.commit()
-        if row_id_value is not None or row_id_value!="":
-            row_data_values=get_data_from_db(db,row_id_value)
-            row_id_value=""
-            socketio.emit('my_response2',
-                      { 'row_data':row_data_values},namespace='/test')
+                write_to_json(dataList, str(maxid).replace("(", "").replace(")", ""))
+                dataList = []
+
+        if row_id_value is not None or row_id_value != "":
+            row_data_values = get_data_from_db(db, row_id_value)
+            row_id_value = ""
+            # socketio.emit('my_response2',
+            #           { 'row_data':row_data_values},namespace='/test')
 
     db.close()
 
