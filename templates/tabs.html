@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>jQuery UI Tabs - Open on mouseover</title>
+    <!--     http://jqueryui.com/tabs/#mouseover -->
+    <link rel="stylesheet" href="static/jquery-ui.min.css">
+    <script src="static/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.5/socket.io.min.js"></script>
+    <script src="static/jquery-ui.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        $(function () {
+            $("#tabs").tabs({
+                event: "mouseover"
+            });
+        });
+        $(document).ready(function () {
+            var x = new Array();
+            var y = new Array();
+            var y2 = new Array();
+            var trace;
+            var trace2;
+            var layout;
+
+            namespace = '/test';
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
+            socket.on('connect', function () {
+                socket.emit('my_event', {data: 'I\'m connected!', value: 1});
+            });
+
+            socket.on('my_response', function (msg) {
+                console.log(msg.data);
+                $('#log').append('Received #' + msg.count + ': ' + msg.data + '<br>').html();
+                x.push(parseFloat(msg.count));
+                y.push(parseFloat(msg.data));
+                y2.push(parseFloat(msg.data2));
+                trace = {
+                    x: x,
+                    y: y,
+                };
+                layout = {
+                    title: 'Data',
+                    xaxis: {
+                        title: 'x',
+                    },
+                    yaxis: {
+                        title: 'y',
+                        //range: [-1,1]
+                    }
+                };
+                trace2 = {
+                    x: x,
+                    y: y2,
+                };
+                layout = {
+                    title: 'Data',
+                    xaxis: {
+                        title: 'x',
+                    },
+                    yaxis: {
+                        title: 'y',
+                        //range: [-1,1]
+                    }
+                };
+                console.log(trace2);
+                var traces = new Array();
+                traces.push(trace);
+                traces.push(trace2);
+
+                Plotly.newPlot($('#plotdiv')[0], traces, layout);
+
+                var traces = new Array();
+                traces.push(trace);
+                Plotly.newPlot($('#plotdiv')[0], traces, layout);
+                console.log(parseFloat(msg.data))
+                 var data = [
+                    {
+                        domain: {x: [0, 1], y: [0, 1]},
+                        value: parseFloat(msg.data),
+                        title: {text: "Speed"},
+                        type: "indicator",
+                        mode: "gauge+number",
+                        delta: {reference: 400},
+                        gauge: {axis: {range: [-1, 1]}}
+                    }
+                ];
+
+                layout = {width: 600, height: 400};
+                Plotly.newPlot('myDiv', data, layout);
+            });
+
+            $('form#emit').submit(function (event) {
+                socket.emit('my_event', {value: $('#emit_value').val()});
+                return false;
+            });
+            $('form#disconnect').submit(function (event) {
+                socket.emit('disconnect_request');
+                return false;
+            });
+            $('#buttonVal').click(function (event) {
+                console.log($('#buttonVal').val());
+                socket.emit('click_event', {value: $('#buttonVal').val()});
+                return false;
+            });
+            $('#start').click(function (event) {
+                console.log($('#start').val());
+                socket.emit('click_event', {value: $('#start').val()});
+                return false;
+            });
+        });
+    </script>
+</head>
+<body>
+
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Nunc tincidunt</a></li>
+        <li><a href="#tabs-2">Proin dolor</a></li>
+        <li><a href="#tabs-3">Aenean lacinia</a></li>
+    </ul>
+    <div id="tabs-1">
+        <h1>Flask-SocketIO Test</h1>
+        <h2>Send:</h2>
+        <form id="emit" method="POST" action='#'>
+            <input type="text" name="emit_value" id="emit_value" placeholder="Amplituda">
+            <input type="submit" value="Send">
+        </form>
+        <form id="disconnect" method="POST" action="#">
+            <input type="submit" value="Disconnect">
+        </form>
+        <h2>Receive:</h2>
+        <div id="log"></div>
+        <button id="start" type="submit" value="start">Start</button>
+        <button id="buttonVal" type="submit" value="stop">stop</button>
+    </div>
+    <div id="tabs-2">
+        <div id="plotdiv" style="width:600px;height:250px;"></div>
+    </div>
+    <div id="tabs-3">
+        <div id="myDiv"></div>
+    </div>
+</div>
+
+</body>
+</html>
