@@ -30,16 +30,16 @@ thread_lock = Lock()
 def background_thread(args):
     count = 0
     dataList = []
-    btnV=""
+    btnV = ""
     db = MySQLdb.connect(host=myhost, user=myuser, passwd=mypasswd, db=mydb)
     while True:
         time.sleep(2)
         if args:
-          A = dict(args).get('A')
-          btnV = dict(args).get('btn_value')
+            A = dict(args).get('A')
+            btnV = dict(args).get('btn_value')
         else:
-          A = 1
-        #print A
+            A = 1
+        # print A
         if btnV == "start":
             flag = 1
         elif btnV == "stop":
@@ -59,7 +59,7 @@ def background_thread(args):
                 "y2": float(A) * prem2, }
             dataList.append(dataDict)
             socketio.emit('my_response',
-                          {'data': float(A) * math.sin(time.time()),'data2': float(A)*prem2, 'count': count},
+                          {'data': float(A) * prem, 'data2': float(A) * prem2, 'count': count},
                           namespace='/test')
         else:
             if len(dataList) > 0:
@@ -73,10 +73,10 @@ def background_thread(args):
     db.close()
 
 
-
 @app.route('/')
 def index():
-    return render_template('tabs.html',async_mode=socketio.async_mode)
+    return render_template('tabs.html', async_mode=socketio.async_mode)
+
 
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
@@ -102,13 +102,16 @@ def test_connect():
             thread = socketio.start_background_task(target=background_thread, args=session._get_current_object())
     emit('my_response', {'data': 'Connected', 'count': 0})
 
+
 @socketio.on('click_event', namespace='/test')
 def db_message(message):
     session['btn_value'] = message['value']
 
+
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
     print('Client disconnected', request.sid)
+
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=80, debug=True)

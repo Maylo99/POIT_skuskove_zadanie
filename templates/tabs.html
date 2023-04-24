@@ -32,7 +32,7 @@
 
             socket.on('my_response', function (msg) {
                 console.log(msg.data);
-                $('#log').append('Received #' + msg.count + ': ' + msg.data + '<br>').html();
+                $('#log').append('Received #' + msg.count + ': ' + msg.data +'<br>' + msg.data2 +'<br>').html();
                 x.push(parseFloat(msg.count));
                 y.push(parseFloat(msg.data));
                 y2.push(parseFloat(msg.data2));
@@ -46,8 +46,7 @@
                         title: 'x',
                     },
                     yaxis: {
-                        title: 'y',
-                        //range: [-1,1]
+                        title: 'y'
                     }
                 };
                 trace2 = {
@@ -60,19 +59,15 @@
                         title: 'x',
                     },
                     yaxis: {
-                        title: 'y',
-                        //range: [-1,1]
+                        title: 'y'
                     }
                 };
-                console.log(trace2);
+
                 var traces = new Array();
                 traces.push(trace);
                 traces.push(trace2);
+                console.log(traces);
 
-                Plotly.newPlot($('#plotdiv')[0], traces, layout);
-
-                var traces = new Array();
-                traces.push(trace);
                 Plotly.newPlot($('#plotdiv')[0], traces, layout);
                 console.log(parseFloat(msg.data))
                  var data = [
