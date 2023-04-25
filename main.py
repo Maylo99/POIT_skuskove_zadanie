@@ -92,7 +92,6 @@ def background_thread(args):
             args['row_id'] = ""
         else:
             A = 1
-        # print A
         if btnV == "start":
             flag = 1
         elif btnV == "stop":
@@ -117,7 +116,6 @@ def background_thread(args):
         elif flag == 0:
             if len(dataList) > 0:
                 json_object = json.dumps(dataList, indent=4)
-
                 print(str(dataList).replace("'", "\""))
                 cursor = db.cursor()
                 cursor.execute("SELECT MAX(id) FROM graph")
