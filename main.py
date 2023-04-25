@@ -40,7 +40,7 @@ def write_to_json(new_record, str_id):
     if os.path.getsize(filename) > 0:
         with open(filename, 'r') as f:
             existing_data = json.load(f)
-        init={
+        init = {
             "id": str_id,
             "result": {
                 "data": new_record
@@ -52,6 +52,7 @@ def write_to_json(new_record, str_id):
         # Write combined data back to file as a JSON array
         with open(filename, 'w') as f:
             f.write(json.dumps(existing_data, indent=4))
+            f.close()
     else:
         # Write new record as a JSON array to file
         init = [{
@@ -64,6 +65,15 @@ def write_to_json(new_record, str_id):
 
         with open(filename, 'w') as f:
             f.write(json.dumps(init))
+            f.close()
+
+
+def search_data_file(id):
+    with open('data.json', 'r') as f:
+        data = json.load(f)
+    for item in data:
+        if item['id'] == int(id):
+            return item
 
 
 def background_thread(args):
@@ -77,6 +87,9 @@ def background_thread(args):
             A = dict(args).get('A')
             btnV = dict(args).get('btn_value')
             row_id_value = dict(args).get('row_id')
+            file_id_value = dict(args).get('file_id')
+            args['file_id'] = ""
+            args['row_id'] = ""
         else:
             A = 1
         # print A
@@ -111,14 +124,20 @@ def background_thread(args):
                 maxid = cursor.fetchone()
                 cursor.execute("INSERT INTO graph (id, hodnoty) VALUES (%s, %s)", (maxid[0] + 1, json_object))
                 db.commit()
-                write_to_json(dataList, str(maxid).replace("(", "").replace(")", ""))
+                write_to_json(dataList, maxid[0])
                 dataList = []
 
-        if row_id_value is not None or row_id_value != "":
+        if row_id_value is not None and row_id_value != "":
             row_data_values = get_data_from_db(db, row_id_value)
-            row_id_value = ""
-            # socketio.emit('my_response2',
-            #           { 'row_data':row_data_values},namespace='/test')
+            socketio.emit('my_response2',
+                       { 'row_data':row_data_values},namespace='/test')
+
+        if file_id_value is not None and file_id_value != "":
+            filename = "data.json"
+            if os.path.getsize(filename) > 0:
+                data_from_file = search_data_file(file_id_value)
+                socketio.emit('file_response',
+                              {'row_data': data_from_file}, namespace='/test')
 
     db.close()
 
@@ -127,11 +146,17 @@ def background_thread(args):
 def index():
     return render_template('tabs.html', async_mode=socketio.async_mode)
 
+
+@socketio.on('file_id_event', namespace='/test')
+def test_message(message):
+    session['file_id'] = message['file_id']
+
+
 @socketio.on('row_id_event', namespace='/test')
 def test_message(message):
     session['row_id'] = message['row_id']
-    # emit('my_response',
-    #      {'data': message['value'], 'count': session['receive_count']})
+
+
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
