@@ -82,38 +82,45 @@ def background_thread(args):
     btnV = ""
     db = MySQLdb.connect(host=myhost, user=myuser, passwd=mypasswd, db=mydb)
     while True:
-        time.sleep(2)
+        arduino_data = str(ser.readline().decode('ISO-8859-1').rstrip())
+        print(arduino_data)
+        split_data = arduino_data.split(':')
+        distance = int(split_data[1])
+        ir = int(split_data[3])
         if args:
             A = dict(args).get('A')
-            btnV = dict(args).get('btn_value')
+            option = dict(args).get('option')
             row_id_value = dict(args).get('row_id')
             file_id_value = dict(args).get('file_id')
             args['file_id'] = ""
             args['row_id'] = ""
+
+            if option == "ir":
+                if int(ir) == 0:
+                    btnV = "stop"
+                if int(ir) == 1:
+                    btnV = "start"
+            elif option == "btns":
+                btnV = dict(args).get('btn_value')
+            else:
+                btnV = "stop"
         else:
             A = 1
         if btnV == "start":
-            flag = 1
-        elif btnV == "stop":
-            flag = 0
-        else:
-            flag = 2
-        if flag == 1:
-            print(args)
             socketio.sleep(2)
             count += 1
-            prem = math.sin(time.time())
-            prem2 = math.cos(time.time())
+            prem = distance
+            prem2 = ir
             dataDict = {
                 "t": time.time(),
                 "x": count,
                 "y": float(A) * prem,
-                "y2": float(A) * prem2, }
+                "y2": prem2 }
             dataList.append(dataDict)
             socketio.emit('my_response',
-                          {'data': float(A) * prem, 'data2': float(A) * prem2, 'count': count},
+                          {'data': float(A) * prem, 'data2': prem2, 'count': count},
                           namespace='/test')
-        elif flag == 0:
+        elif btnV == "stop":
             if len(dataList) > 0:
                 json_object = json.dumps(dataList, indent=4)
                 print(str(dataList).replace("'", "\""))
@@ -128,7 +135,7 @@ def background_thread(args):
         if row_id_value is not None and row_id_value != "":
             row_data_values = get_data_from_db(db, row_id_value)
             socketio.emit('my_response2',
-                       { 'row_data':row_data_values},namespace='/test')
+                          {'row_data': row_data_values}, namespace='/test')
 
         if file_id_value is not None and file_id_value != "":
             filename = "data.json"
@@ -183,6 +190,18 @@ def test_connect():
 @socketio.on('click_event', namespace='/test')
 def db_message(message):
     session['btn_value'] = message['value']
+
+
+@socketio.on('click_event2', namespace='/test')
+def db_message(message):
+    print(message)
+    session['option'] = message['ir']
+
+
+@socketio.on('click_event3', namespace='/test')
+def db_message(message):
+    print(message)
+    session['option'] = message['btns']
 
 
 @socketio.on('disconnect', namespace='/test')

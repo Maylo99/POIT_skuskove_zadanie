@@ -38,7 +38,26 @@
                         y: yValues,
                     };
                     layout = {
-                        title: 'Data z databazy',
+                        title: 'Data z databazy Distance',
+                        xaxis: {
+                            title: 'x',
+                        },
+                        yaxis: {
+                            title: 'y'
+                        }
+                    }
+                    var traces = new Array();
+                    traces.push(trace);
+                    Plotly.newPlot($('#plotdiv1')[0], traces, layout);
+
+                    const yValues2 = parsedData.map(obj => obj.y2);
+                    console.log(yValues2)
+                    trace = {
+                        x: xValues,
+                        y: yValues2,
+                    };
+                    layout = {
+                        title: 'Data z databazy IR',
                         xaxis: {
                             title: 'x',
                         },
@@ -59,7 +78,26 @@
                         y: yValues,
                     };
                     layout = {
-                        title: 'Data z databazy',
+                        title: 'Data z JSON Distance',
+                        xaxis: {
+                            title: 'x',
+                        },
+                        yaxis: {
+                            title: 'y'
+                        }
+                    }
+                    var traces = new Array();
+                    traces.push(trace);
+                    Plotly.newPlot($('#plotdiv1')[0], traces, layout);
+
+                     const yValues2 =msg.row_data.result.data.map(obj=>obj.y2)
+                    console.log(yValues2)
+                    trace = {
+                        x: xValues,
+                        y: yValues2,
+                    };
+                    layout = {
+                        title: 'Data JSON IR',
                         xaxis: {
                             title: 'x',
                         },
@@ -119,7 +157,7 @@
                         type: "indicator",
                         mode: "gauge+number",
                         delta: {reference: 400},
-                        gauge: {axis: {range: [-1, 1]}}
+                        gauge: {axis: {range: [1, 1000]}}
                     }
                 ];
 
@@ -134,7 +172,7 @@
                         type: "indicator",
                         mode: "gauge+number",
                         delta: {reference: 400},
-                        gauge: {axis: {range: [-1, 1]}}
+                        gauge: {axis: {range: [0, 1]}}
                     }
                 ];
 
@@ -166,6 +204,16 @@
             $('#start').click(function (event) {
                 console.log($('#start').val());
                 socket.emit('click_event', {value: $('#start').val()});
+                return false;
+            });
+            $('#ir').click(function (event) {
+                console.log($('#ir').val());
+                socket.emit('click_event2', {ir: $('#ir').val()});
+                return false;
+            });
+            $('#btns').click(function (event) {
+                console.log($('#btns').val());
+                socket.emit('click_event3', {btns: $('#btns').val()});
                 return false;
             });
         })
@@ -206,10 +254,9 @@
             <input type="text" name="file_id_value" id="file_id_value" placeholder="ID riadku v subore">
             <input type="submit" value="Send">
         </form>
-
-
          <div id="plotdiv2" style="width:600px;height:250px;"></div>
          <div id="plotdiv" style="width:600px;height:250px;"></div>
+         <div id="plotdiv1" style="width:600px;height:250px;"></div>
     </div>
     <div id="tabs-3">
         <div id="myDiv"></div>
