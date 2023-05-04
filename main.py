@@ -8,7 +8,7 @@ import os
 import MySQLdb
 import time
 import configparser as ConfigParser
-import random
+import serial
 
 async_mode = None
 
@@ -77,6 +77,7 @@ def search_data_file(id):
 
 
 def background_thread(args):
+    ser = serial.Serial("/dev/ttyS2", 9600)
     count = 0
     dataList = []
     btnV = ""
@@ -88,6 +89,7 @@ def background_thread(args):
         distance = int(split_data[1])
         ir = int(split_data[3])
         if args:
+            print(args)
             A = dict(args).get('A')
             option = dict(args).get('option')
             row_id_value = dict(args).get('row_id')
@@ -131,7 +133,7 @@ def background_thread(args):
                 db.commit()
                 write_to_json(dataList, maxid[0])
                 dataList = []
-
+        print(row_id_value)
         if row_id_value is not None and row_id_value != "":
             row_data_values = get_data_from_db(db, row_id_value)
             socketio.emit('my_response2',
@@ -143,7 +145,7 @@ def background_thread(args):
                 data_from_file = search_data_file(file_id_value)
                 socketio.emit('file_response',
                               {'row_data': data_from_file}, namespace='/test')
-
+    ser.close()
     db.close()
 
 
